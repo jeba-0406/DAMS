@@ -1,0 +1,50 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/dams_db}
+    username: ${DATABASE_USERNAME:dams_user}
+    password: ${DATABASE_PASSWORD:dams_password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    open-in-view: false
+
+  sql:
+    init:
+      mode: never
+
+logging:
+  level:
+    com.dams: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:bXlfc2VjcmV0X2tleV9mb3JfZGFtc19hcHBsaWNhdGlvbl8yMDI0X3Byb2R1Y3Rpb25fc2VjdXJl}
+    expiration: ${JWT_EXPIRATION:86400000}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized

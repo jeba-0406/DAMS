@@ -1,0 +1,81 @@
+version: '3.9'
+
+services:
+  # ─────────────────────────────────────────────
+  # PostgreSQL Database
+  # ─────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: dams-postgres
+    environment:
+      POSTGRES_DB: dams_db
+      POSTGRES_USER: dams_user
+      POSTGRES_PASSWORD: dams_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/src/main/resources/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dams_user -d dams_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dams-network
+
+  # ─────────────────────────────────────────────
+  # Spring Boot Backend
+  # ─────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: dams-backend
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/dams_db
+      DATABASE_USERNAME: dams_user
+      DATABASE_PASSWORD: dams_password
+      JWT_SECRET: ${JWT_SECRET:-bXlfc2VjcmV0X2tleV9mb3JfZGFtc19hcHBsaWNhdGlvbl8yMDI0X3Byb2R1Y3Rpb25fc2VjdXJl}
+      JWT_EXPIRATION: 86400000
+      FRONTEND_URL: http://localhost:3000
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - dams-network
+
+  # ─────────────────────────────────────────────
+  # Next.js Frontend
+  # ─────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8080
+    container_name: dams-frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://backend:8080
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - dams-network
+
+volumes:
+  postgres_data:
+
+networks:
+  dams-network:
+    driver: bridge
