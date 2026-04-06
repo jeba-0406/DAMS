@@ -19,8 +19,8 @@ FROM eclipse-temurin:17-jre-alpine AS runtime
 WORKDIR /app
 
 # Security: non-root user
-RUN addgroup -S dams && adduser -S dams -G dams \\
-    && mkdir -p /app/uploads \\
+RUN addgroup -S dams && adduser -S dams -G dams \
+    && mkdir -p /app/uploads \
     && chown -R dams:dams /app/uploads
 USER dams
 
