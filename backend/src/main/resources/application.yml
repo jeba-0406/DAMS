@@ -10,10 +10,13 @@ spring:
     password: ${DATABASE_PASSWORD:dams_password}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 10
-      minimum-idle: 5
+      maximum-pool-size: 5
+      minimum-idle: 2
       idle-timeout: 300000
       connection-timeout: 20000
+      data-source-properties:
+        sslmode: ${DB_SSL_MODE:prefer}
+        ssl: true
 
   jpa:
     hibernate:
