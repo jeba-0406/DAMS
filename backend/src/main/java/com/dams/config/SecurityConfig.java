@@ -2,6 +2,7 @@ package com.dams.config;
 
 import com.dams.security.JwtAuthFilter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -23,6 +24,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -33,6 +36,11 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
+
+    // Injected from env var — supports comma-separated URLs for multiple origins
+    // e.g. FRONTEND_URL=https://dams-frontend.up.railway.app
+    @Value("${FRONTEND_URL:http://localhost:3000}")
+    private String frontendUrl;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -57,10 +65,20 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(
+
+        // Always allow localhost for development
+        List<String> allowedOrigins = new ArrayList<>(List.of(
                 "http://localhost:3000",
-                "http://localhost:3001",
-                "${FRONTEND_URL:http://localhost:3000}"));
+                "http://localhost:3001"
+        ));
+
+        // Add production frontend URL(s) from env var (supports comma-separated list)
+        Arrays.stream(frontendUrl.split(","))
+                .map(String::trim)
+                .filter(url -> !url.isBlank())
+                .forEach(allowedOrigins::add);
+
+        config.setAllowedOrigins(allowedOrigins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of("Authorization"));

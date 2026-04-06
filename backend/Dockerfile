@@ -1,18 +1,16 @@
 # ─────────────────────────────────────────────
 # Stage 1: Build
 # ─────────────────────────────────────────────
-FROM eclipse-temurin:17-jdk-alpine AS builder
+FROM maven:3.9-eclipse-temurin-17-alpine AS builder
 WORKDIR /app
 
-# Copy Maven wrapper + pom first (layer caching)
-COPY mvnw .
-COPY .mvn .mvn
+# Copy pom.xml and download dependencies
 COPY pom.xml .
-RUN chmod +x mvnw && ./mvnw dependency:go-offline -q
+RUN mvn dependency:go-offline -q
 
 # Copy source and build
 COPY src src
-RUN ./mvnw package -DskipTests -q
+RUN mvn package -DskipTests -q
 
 # ─────────────────────────────────────────────
 # Stage 2: Runtime
